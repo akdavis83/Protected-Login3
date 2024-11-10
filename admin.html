@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Area</title>
+</head>
+<body>
+    <h1>Welcome to the Admin Area</h1>
+    <p>If you are seeing this, you are authenticated.</p>
+
+    <script>
+       async function decryptWithAESKey(aesKey, encryptedData) {
+    const { iv, data } = JSON.parse(encryptedData);
+    const ivArray = new Uint8Array(iv);
+    const dataArray = new Uint8Array(data);
+
+    const decryptedData = await crypto.subtle.decrypt(
+        {
+            name: "AES-GCM",
+            iv: ivArray,
+        },
+        aesKey,
+        dataArray
+    );
+
+    const decoder = new TextDecoder();
+    return decoder.decode(decryptedData);
+}
+
+async function validateAccess() {
+    // Get encrypted token from sessionStorage
+    const encryptedToken = sessionStorage.getItem("encryptedToken");
+    const username = "Alan Davis";  // Replace with correct username or fetch from login session
+    const password = "password1";   // Replace with correct password or fetch from login session
+
+    if (!encryptedToken) {
+        alert("Unauthorized access. Redirecting to login.");
+        window.location.href = "login.html";
+        return;
+    }
+
+    // Derive AES key from SHA-256 hash of username + password
+    const hashBuffer = await generateSHA256Hash(username + password);
+    const aesKey = await deriveAESKeyFromHash(hashBuffer);
+
+    // Decrypt token and validate
+    const decryptedToken = await decryptWithAESKey(aesKey, encryptedToken);
+    if (decryptedToken === "admin") {
+        console.log("Access granted.");
+    } else {
+        alert("Unauthorized access. Redirecting to login.");
+        window.location.href = "login.html";
+    }
+}
+
+// Run validation on page load
+validateAccess();
+
+    </script>
+</body>
+</html>
